@@ -5,3 +5,5 @@ dist
 .DS_Store
 /prisma/*.db
 /prisma/*.db-journal
+
+/src/generated/prisma
