@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
+import { Search } from 'lucide-react';
 
 export const SearchBar = ({ onSearch }) => {
   const [query, setQuery] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Intentionally passing raw search to demonstrate SQLi being blocked by backend parameterization
     onSearch(query);
   };
 
   return (
     <form className="search-bar" onSubmit={handleSubmit}>
-      <input 
-        type="text" 
-        placeholder="Search posts or try ' OR 1=1 --" 
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <button type="submit">Search</button>
+      <div className="search-input-wrapper">
+        <Search size={20} className="search-icon" />
+        <input 
+          type="text" 
+          placeholder="Search resources..." 
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <button type="submit" className="btn-primary search-submit-btn">Search</button>
+      </div>
     </form>
   );
 };

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { mockApi } from '../services/mockApi';
+import { api } from '../services/api';
 import { Eye, EyeOff } from 'lucide-react';
 
-export const AuthForms = ({ onLoginSuccess }) => {
-  const [isLogin, setIsLogin] = useState(true);
+export const AuthForms = ({ onLoginSuccess, initialMode = 'login' }) => {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   
   // States mapping directly to security limits and requirements
   const [username, setUsername] = useState('');
@@ -21,9 +21,12 @@ export const AuthForms = ({ onLoginSuccess }) => {
     try {
       if (isLogin) {
         // Attempt login
-        const res = await mockApi.login(username, password);
-        if (res.success) {
-          onLoginSuccess(res.role);
+        const res = await api.login(email, password);
+        if (res.user) {
+          onLoginSuccess(res.user);
+        } else if (res.id) {
+          // Fallback if the backend returns the user object directly
+          onLoginSuccess(res);
         }
       } else {
         // Validation check for registration before calling API
@@ -32,13 +35,13 @@ export const AuthForms = ({ onLoginSuccess }) => {
            return setError("Username can only contain alphanumeric characters and underscores.");
         }
         
-        await mockApi.register(username, email, password);
+        await api.register(username, email, password);
         setMessage("Registration successful! You can now log in.");
         setIsLogin(true); // switch to login form
       }
     } catch (err) {
       // Show generic error or block out for 15 minutes (429 handling)
-      setError(err.message);
+      setError(err);
     }
   };
 
@@ -49,29 +52,29 @@ export const AuthForms = ({ onLoginSuccess }) => {
       {message && <div className="success-banner">{message}</div>}
 
       <form onSubmit={handleSubmit} className="auth-form">
-        <div className="form-group">
-          <label>Username</label>
-          <input 
-            type="text" 
-            value={username} 
-            onChange={e => setUsername(e.target.value)}
-            maxLength={20}
-            required
-          />
-        </div>
-
         {!isLogin && (
           <div className="form-group">
-            <label>Email</label>
+            <label>Username</label>
             <input 
-              type="email" 
-              value={email} 
-              onChange={e => setEmail(e.target.value)}
-              maxLength={100}
+              type="text" 
+              value={username} 
+              onChange={e => setUsername(e.target.value)}
+              maxLength={20}
               required
             />
           </div>
         )}
+
+        <div className="form-group">
+          <label>Email</label>
+          <input 
+            type="email" 
+            value={email} 
+            onChange={e => setEmail(e.target.value)}
+            maxLength={100}
+            required
+          />
+        </div>
 
         <div className="form-group">
           <label>Password</label>
@@ -95,7 +98,7 @@ export const AuthForms = ({ onLoginSuccess }) => {
           </div>
         </div>
 
-        <button type="submit">{isLogin ? "Log In" : "Register"}</button>
+        <button type="submit" className="btn-primary">{isLogin ? "Log In" : "Register"}</button>
       </form>
       
       <p>
@@ -104,8 +107,6 @@ export const AuthForms = ({ onLoginSuccess }) => {
           {isLogin ? "Sign up here" : "Log in here"}
         </button>
       </p>
-
-      {isLogin && <div className="hint">Hint: admin / P@ssw0rd123! OR user / Us3rP@ss!</div>}
     </div>
   );
 };
