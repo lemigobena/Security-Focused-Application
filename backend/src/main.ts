@@ -24,7 +24,11 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 app.use(
   cors({
-    origin: true,
+    origin: [
+      'https://security-focused-application-all-in.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ],
     credentials: true, // Allow cookies to be sent
   })
 );
@@ -53,6 +57,16 @@ app.use('/api/bookmarks', bookmarkRoutes);
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });
+});
+
+// Debug endpoint for deployment troubleshooting
+app.get('/api/debug', (req, res) => {
+  res.status(200).json({
+    database_set: !!process.env.DATABASE_URL,
+    jwt_set: !!process.env.JWT_SECRET,
+    node_env: process.env.NODE_ENV,
+    url: 'https://security-focused-application-all-in.vercel.app'
+  });
 });
 
 app.get('/', (req, res) => {
