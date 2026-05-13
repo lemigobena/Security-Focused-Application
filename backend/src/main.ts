@@ -25,14 +25,8 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '');
-      const allowedOrigins = [
-        frontendUrl,
-        'http://localhost:5173',
-        'http://localhost:3000'
-      ].filter(Boolean);
-
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow local development and any Vercel deployment domain
+      if (!origin || origin.endsWith('.vercel.app') || origin.startsWith('http://localhost:')) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
