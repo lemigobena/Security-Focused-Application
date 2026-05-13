@@ -3,11 +3,11 @@ import prisma from '../utils/db';
 
 export const uploadFile = async (req: Request, res: Response) => {
   try {
-    if (!req.file) {
+    if (!(req as any).file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const fileData = req.file as any;
+    const fileData = (req as any).file;
     const userId = (req as any).user?.id;
 
     if (!userId) {
