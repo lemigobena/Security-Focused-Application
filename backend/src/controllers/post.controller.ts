@@ -41,7 +41,7 @@ export const getPosts = async (
     // Simple social link recognition (TikTok, YouTube, Instagram)
     const socialRegex = /(https?:\/\/(www\.)?(youtube\.com|youtu\.be|tiktok\.com|instagram\.com)\/[^\s]+)/g;
 
-    const formattedPosts = posts.map((post) => {
+    const formattedPosts = posts.map((post: any) => {
       const links = post.body?.match(socialRegex) || [];
       return { ...post, detectedLinks: links };
     });

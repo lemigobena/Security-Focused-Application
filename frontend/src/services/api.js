@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Configure Axios instance
 const apiClient = axios.create({
-  baseURL: "/api", // Using Vite proxy
+  baseURL: import.meta.env.VITE_API_URL || "/api", // Fallback to /api for proxy/relative path
   withCredentials: true, // Crucial for sending/receiving cookies (JWT)
   timeout: 15000, // Increased timeout for stability with new adapter
   headers: {

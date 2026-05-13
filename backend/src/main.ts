@@ -58,7 +58,12 @@ app.get('/health', (req, res) => {
 // Centralized error handler
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT} in ${process.env.NODE_ENV} mode.`);
-});
+// Export for Vercel
+export default app;
+
+// Start server locally
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    logger.info(`Server is running on port ${PORT} in ${process.env.NODE_ENV} mode.`);
+  });
+}
