@@ -7,16 +7,19 @@ dotenv.config();
 
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  console.error('DATABASE_URL is missing! Please set it in Vercel environment variables.');
+let prisma: PrismaClient;
+
+if (connectionString) {
+  const pool = new Pool({ 
+    connectionString,
+    ssl: { rejectUnauthorized: false }
+  });
+  const adapter = new PrismaPg(pool);
+  prisma = new PrismaClient({ adapter });
+} else {
+  console.warn('DATABASE_URL is missing. Database features will not work.');
+  // Fallback client for module loading safety
+  prisma = new PrismaClient(); 
 }
-
-const pool = new Pool({ 
-  connectionString,
-  ssl: { rejectUnauthorized: false } // Required for some hosted databases like Neon
-});
-
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 
 export default prisma;

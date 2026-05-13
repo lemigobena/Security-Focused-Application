@@ -24,14 +24,7 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow local development and any Vercel deployment domain
-      if (!origin || origin.endsWith('.vercel.app') || origin.startsWith('http://localhost:')) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: true,
     credentials: true, // Allow cookies to be sent
   })
 );
