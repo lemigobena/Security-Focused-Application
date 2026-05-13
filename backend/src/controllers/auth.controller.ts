@@ -16,7 +16,16 @@ export const register = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, agreedToTerms } = req.body;
+
+    // Password strength validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      res.status(400).json({ 
+        error: 'Password must be at least 8 characters long and include a capital letter, a small letter, a number, and a special character.' 
+      });
+      return;
+    }
 
     const existingUser = await prisma.user.findFirst({
       where: { OR: [{ email }, { username }] },
@@ -27,7 +36,7 @@ export const register = async (
       return;
     }
 
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const user = await prisma.user.create({
@@ -35,6 +44,17 @@ export const register = async (
         username,
         email,
         password: hashedPassword,
+        agreedToTerms: agreedToTerms || false,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "REGISTER",
+        entity: "USER",
+        entityId: user.id,
+        ip: req.ip || req.socket.remoteAddress,
       },
     });
 
@@ -53,6 +73,7 @@ export const register = async (
         username: user.username,
         email: user.email,
         role: user.role,
+        agreedToTerms: user.agreedToTerms,
       },
     });
   } catch (error) {
@@ -66,12 +87,30 @@ export const login = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, agreedToTerms } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+
+    // If they agreed during login, update their status
+    if (agreedToTerms && !user.agreedToTerms) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { agreedToTerms: true },
+      });
+    }
+
+    if (user.isSuspended) {
+      res.status(403).json({ error: "Your account has been suspended" });
+      return;
+    }
+
+    if (!user.agreedToTerms) {
+      res.status(401).json({ error: "You must agree to the terms of use" });
       return;
     }
 

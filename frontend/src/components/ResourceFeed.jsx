@@ -3,18 +3,60 @@ import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { SearchBar } from './SearchBar';
 import { Modal } from './Modal';
-import { Trash2, PlusCircle, Inbox } from 'lucide-react';
+import { StoriesHeader } from './StoriesHeader';
+import { PostCard } from './PostCard';
+import { PlusCircle, Inbox, Download, X } from 'lucide-react';
 
 export const ResourceFeed = ({ currentRole }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
 
-  const loadPosts = async (searchQuery = "") => {
+  const [fileType, setFileType] = useState('');
+  const [bookmarks, setBookmarks] = useState([]);
+
+  const loadBookmarks = async () => {
+    try {
+      const data = await api.getBookmarks();
+      setBookmarks(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleBookmark = async (postId) => {
+    // Optimistic update: toggle the bookmark locally first
+    const wasBookmarked = bookmarks.some(b => b.postId === postId);
+    
+    if (wasBookmarked) {
+      setBookmarks(prev => prev.filter(b => b.postId !== postId));
+    } else {
+      // Add a temporary bookmark record
+      setBookmarks(prev => [...prev, { postId, id: Date.now() }]);
+    }
+
+    try {
+      await api.toggleBookmark(postId);
+      // Refresh from server to ensure ID consistency
+      loadBookmarks();
+    } catch (err) {
+      console.error(err);
+      // Revert on error
+      loadBookmarks();
+      alert("Failed to update bookmark");
+    }
+  };
+
+  useEffect(() => {
+    loadBookmarks();
+  }, []);
+
+  const loadPosts = async (searchQuery = "", type = fileType) => {
     setLoading(true);
     try {
-      const data = await api.getPosts(searchQuery);
+      const data = await api.getPosts(searchQuery, type);
       setPosts(data);
     } catch (err) {
       console.error(err);
@@ -25,82 +67,156 @@ export const ResourceFeed = ({ currentRole }) => {
 
   useEffect(() => {
     loadPosts();
-  }, []);
-
-  const handleDeleteClick = (id) => {
-    setPostToDelete(id);
-    setIsModalOpen(true);
-  };
+  }, [fileType]);
 
   const confirmDelete = async () => {
+// ...
     if (!postToDelete) return;
     try {
-      await api.deletePost(postToDelete);
+      await api.suspendPost(postToDelete, true);
       loadPosts();
     } catch (err) {
-      alert("Failed to delete post: " + err);
+      alert("Failed to suspend post: " + err);
     } finally {
       setPostToDelete(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
   return (
-    <div className="feed-container">
-      <div className="feed-header-row">
-        <h2>Resource Feed</h2>
-        {(currentRole === 'USER') && (
-          <Link to="/create-post" className="btn-primary flex-btn">
-            <PlusCircle size={18} />
-            Post Resource
-          </Link>
+    <div className="feed-layout">
+      <StoriesHeader />
+      
+      <div className="feed-container">
+        <div className="feed-header-row">
+          <h2>Resources</h2>
+          {(currentRole === 'USER') && (
+            <Link to="/create-post" className="btn-primary flex-btn">
+              <PlusCircle size={18} />
+              Share
+            </Link>
+          )}
+        </div>
+        
+        <div className="feed-filters">
+          <button className={fileType === '' ? 'active' : ''} onClick={() => setFileType('')}>All</button>
+          <button className={fileType === 'image' ? 'active' : ''} onClick={() => setFileType('image')}>Images</button>
+          <button className={fileType === 'video' ? 'active' : ''} onClick={() => setFileType('video')}>Videos</button>
+          <button className={fileType === 'application' ? 'active' : ''} onClick={() => setFileType('application')}>Documents</button>
+        </div>
+
+        <SearchBar onSearch={(q) => loadPosts(q, fileType)} />
+
+        {loading ? (
+          <div className="loading-state">Loading resources...</div>
+        ) : (
+          <div className="posts-list">
+            {posts.length === 0 ? (
+              <div className="empty-state">
+                <Inbox size={48} className="empty-icon" />
+                <h3>No resources found</h3>
+                <p>Try a different search or be the first to share something!</p>
+              </div>
+            ) : null}
+            
+            {posts.map(post => (
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                onOpen={setSelectedPost}
+                onBookmark={handleToggleBookmark}
+                isBookmarked={(bookmarks || []).some(b => b.postId === post.id)}
+              />
+            ))}
+          </div>
         )}
       </div>
-      
-      <SearchBar onSearch={loadPosts} />
 
-      {loading ? (
-        <div className="loading-state">Loading resources...</div>
-      ) : (
-        <div className="posts-list">
-          {posts.length === 0 ? (
-            <div className="empty-state">
-              <Inbox size={48} className="empty-icon" />
-              <h3>No resources yet</h3>
-              <p>It looks a little quiet here. Share your study materials or tips!</p>
-              {(currentRole === 'USER') && (
-                <Link to="/create-post" className="btn-primary empty-btn">
-                  Be the first to post
-                </Link>
+      {/* Post Detail Modal */}
+      {selectedPost && (
+        <div className="post-detail-overlay" onClick={() => setSelectedPost(null)}>
+          <div className="post-detail-content" onClick={e => e.stopPropagation()}>
+            <button className="close-detail-btn" onClick={() => setSelectedPost(null)}>
+              <X size={24} />
+            </button>
+            
+            <div className="detail-media">
+              {selectedPost.file ? (
+                selectedPost.file.mimetype.includes('image') ? (
+                  <img src={selectedPost.file.path} alt={selectedPost.title} />
+                ) : (
+                  <div className="detail-file-placeholder">
+                    <span>{selectedPost.file.filename}</span>
+                  </div>
+                )
+              ) : (
+                <div className="detail-text-placeholder">
+                  <h2>{selectedPost.title}</h2>
+                </div>
               )}
             </div>
-          ) : null}
-          
-          {posts.map(post => (
-            <div key={post.id} className="post-card">
-              <div className="post-header">
-                <h4>{post.title}</h4>
+
+            <div className="detail-info">
+              <div className="detail-header">
+                <div className="detail-user">
+                  <div className="detail-avatar">
+                    {selectedPost.author?.profilePhotoUrl ? (
+                      <img src={selectedPost.author.profilePhotoUrl} alt="" className="avatar-img-detail" />
+                    ) : (
+                      selectedPost.author?.username?.[0]
+                    )}
+                  </div>
+                  <strong>{selectedPost.author?.username}</strong>
+                </div>
                 {currentRole === 'ADMIN' && (
-                  <button onClick={() => handleDeleteClick(post.id)} className="delete-btn" aria-label="Delete resource">
-                    <Trash2 size={16} />
-                  </button>
+                  <button onClick={() => {
+                    setPostToDelete(selectedPost.id);
+                    setIsDeleteModalOpen(true);
+                  }} className="btn-suspend">Suspend</button>
                 )}
               </div>
-              <p className="post-body">{post.body}</p>
-              <div className="post-footer">
-                <small>Shared by: {post.author?.username || 'Unknown'}</small>
-                <small className="post-date">{new Date(post.createdAt).toLocaleDateString()}</small>
+              
+              <div className="detail-body">
+                <h3>{selectedPost.title}</h3>
+                <p>{selectedPost.body}</p>
+                
+                {selectedPost.detectedLinks?.length > 0 && (
+                  <div className="detected-links">
+                    <strong>Links found:</strong>
+                    <ul>
+                      {selectedPost.detectedLinks.map((link, i) => (
+                        <li key={i}><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
+
+              {selectedPost.file && (
+                <div className="detail-actions">
+                  <a 
+                    href={selectedPost.file.path} 
+                    download={selectedPost.file.filename}
+                    className="btn-primary download-btn"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Download size={18} />
+                    Download {selectedPost.file.mimetype.split('/')[1].toUpperCase()}
+                  </a>
+                </div>
+              )}
             </div>
-          ))}
+          </div>
         </div>
       )}
 
       <Modal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Delete Resource?"
-        message="Are you sure you want to remove this study resource? This action cannot be undone and will be logged in the system audit trail."
+        title="Suspend Resource?"
+        message="Are you sure you want to suspend this study resource? It will be hidden from the feed and logged."
         type="danger"
       />
     </div>

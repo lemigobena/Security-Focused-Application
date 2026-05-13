@@ -51,8 +51,21 @@ export const authenticate = async (
       return;
     }
 
+    if (user.isSuspended) {
+      res.status(403).json({ error: 'Your account has been suspended' });
+      return;
+    }
+
+    if (!user.agreedToTerms) {
+      res.status(401).json({ error: 'You must agree to the terms of use' });
+      return;
+    }
+
     const { password, ...userWithoutPassword } = user;
     req.user = userWithoutPassword;
+
+    // Attach client IP for audit logging, respecting shareIP setting
+    (req as any).clientIp = user.shareIP ? (req.ip || req.socket.remoteAddress) : 'REDACTED';
 
     next();
   } catch (error) {

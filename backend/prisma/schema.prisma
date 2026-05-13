@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,37 +6,39 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  GUEST
-  USER
-  ADMIN
-}
-
 model User {
-  id                  Int          @id @default(autoincrement())
-  username            String       @unique
-  email               String       @unique
+  id                  Int         @id @default(autoincrement())
+  username            String      @unique
+  email               String      @unique
   password            String
-  role                Role         @default(USER)
-  failedLoginAttempts Int          @default(0)
+  role                Role        @default(USER)
+  failedLoginAttempts Int         @default(0)
   lockedUntil         DateTime?
-  createdAt           DateTime     @default(now())
-
-  posts               Post[]
+  createdAt           DateTime    @default(now())
+  agreedToTerms       Boolean     @default(false)
+  bio                 String?
+  isSuspended         Boolean     @default(false)
+  profilePhotoUrl     String?
+  shareIP             Boolean     @default(true)
+  bookmarks           Bookmark[]
   comments            Comment[]
   files               File[]
+  posts               Post[]
   savedFiles          SavedFile[]
 }
 
 model Post {
-  id        Int       @id @default(autoincrement())
-  title     String
-  body      String
-  authorId  Int
-  author    User      @relation(fields: [authorId], references: [id])
-  createdAt DateTime  @default(now())
-
-  comments  Comment[]
+  id           Int        @id @default(autoincrement())
+  title        String?
+  body         String?
+  authorId     Int
+  createdAt    DateTime   @default(now())
+  fileId       Int?
+  isSuspended  Boolean    @default(false)
+  bookmarkedBy Bookmark[]
+  comments     Comment[]
+  author       User       @relation(fields: [authorId], references: [id])
+  file         File?      @relation(fields: [fileId], references: [id])
 }
 
 model Comment {
@@ -47,33 +46,44 @@ model Comment {
   body      String
   authorId  Int
   postId    Int
+  createdAt DateTime @default(now())
   author    User     @relation(fields: [authorId], references: [id])
   post      Post     @relation(fields: [postId], references: [id])
-  createdAt DateTime @default(now())
 }
 
 model File {
-  id        Int         @id @default(autoincrement())
-  filename  String
-  mimetype  String
-  size      Int
-  path      String
+  id         Int         @id @default(autoincrement())
+  filename   String
+  mimetype   String
+  size       Int
+  path       String
   uploaderId Int
-  uploader  User        @relation(fields: [uploaderId], references: [id])
-  createdAt DateTime    @default(now())
-
-  savedBy   SavedFile[]
+  createdAt  DateTime    @default(now())
+  uploader   User        @relation(fields: [uploaderId], references: [id])
+  posts      Post[]
+  savedBy    SavedFile[]
 }
 
 model SavedFile {
   id        Int      @id @default(autoincrement())
   userId    Int
   fileId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  file      File     @relation(fields: [fileId], references: [id])
   createdAt DateTime @default(now())
+  file      File     @relation(fields: [fileId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, fileId])
+}
+
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
 }
 
 model AuditLog {
@@ -84,4 +94,10 @@ model AuditLog {
   entityId  Int?
   timestamp DateTime @default(now())
   ip        String?
+}
+
+enum Role {
+  GUEST
+  USER
+  ADMIN
 }

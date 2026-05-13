@@ -13,15 +13,35 @@ export const AuthForms = ({ onLoginSuccess, initialMode = "login" }) => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
 
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const passwordRequirements = [
+    { label: 'At least 8 characters', regex: /.{8,}/ },
+    { label: 'At least one capital letter', regex: /[A-Z]/ },
+    { label: 'At least one small letter', regex: /[a-z]/ },
+    { label: 'At least one number', regex: /\d/ },
+    { label: 'At least one special character', regex: /[@$!%*?&]/ },
+  ];
+
+  const isPasswordStrong = passwordRequirements.every(req => req.regex.test(password));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
 
+    if (!agreedToTerms) {
+      return setError("You must agree to the Terms of Use to proceed.");
+    }
+
+    if (!isLogin && !isPasswordStrong) {
+      return setError("Password must be at least 8 characters and include a capital letter, a small letter, a number, and a special character.");
+    }
+
     try {
       if (isLogin) {
         // Attempt login
-        const res = await api.login(email, password);
+        const res = await api.login(email, password, agreedToTerms);
         if (res.user) {
           onLoginSuccess(res.user);
         }
@@ -34,7 +54,7 @@ export const AuthForms = ({ onLoginSuccess, initialMode = "login" }) => {
           );
         }
 
-        await api.register(username, email, password);
+        await api.register(username, email, password, agreedToTerms);
         setMessage("Registration successful! You can now log in.");
         setIsLogin(true); // switch to login form
       }
@@ -82,7 +102,6 @@ export const AuthForms = ({ onLoginSuccess, initialMode = "login" }) => {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
               maxLength={128}
               required
             />
@@ -95,9 +114,40 @@ export const AuthForms = ({ onLoginSuccess, initialMode = "login" }) => {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          
+          {!isLogin && (
+            <div className="password-strength-checker signup-strength">
+              <p className="strength-title">Required for security:</p>
+              <ul className="requirements-list">
+                {passwordRequirements.map((req, idx) => {
+                  const isMet = req.regex.test(password);
+                  return (
+                    <li key={idx} className={`requirement-item ${isMet ? 'met' : 'unmet'}`}>
+                      <div className={`status-dot ${isMet ? 'met' : 'unmet'}`}></div>
+                      {req.label}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
-        <button type="submit" className="btn-primary">
+        <div className="form-group-checkbox">
+          <input 
+            type="checkbox" 
+            id="terms" 
+            checked={agreedToTerms} 
+            onChange={(e) => setAgreedToTerms(e.target.checked)} 
+            required
+          />
+          <label htmlFor="terms">I agree to the <a href="#terms">Terms of Use</a></label>
+        </div>
+
+        <button 
+          type="submit" 
+          className="btn-primary"
+        >
           {isLogin ? "Log In" : "Register"}
         </button>
       </form>

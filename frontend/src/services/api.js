@@ -4,6 +4,7 @@ import axios from "axios";
 const apiClient = axios.create({
   baseURL: "/api", // Using Vite proxy
   withCredentials: true, // Crucial for sending/receiving cookies (JWT)
+  timeout: 15000, // Increased timeout for stability with new adapter
   headers: {
     "Content-Type": "application/json",
   },
@@ -21,16 +22,17 @@ apiClient.interceptors.response.use(
 
 export const api = {
   // --- Auth ---
-  login: async (email, password) => {
-    const response = await apiClient.post("/auth/login", { email, password });
-    return response.data; // { user: { id, username, email, role } }
+  login: async (email, password, agreedToTerms) => {
+    const response = await apiClient.post("/auth/login", { email, password, agreedToTerms });
+    return response.data;
   },
 
-  register: async (username, email, password) => {
+  register: async (username, email, password, agreedToTerms) => {
     const response = await apiClient.post("/auth/register", {
       username,
       email,
       password,
+      agreedToTerms,
     });
     return response.data;
   },
@@ -46,39 +48,101 @@ export const api = {
   },
 
   // --- Posts ---
-  getPosts: async (searchQuery = "") => {
-    // Let's pass the search query as a param if backend supported it, else just fetch all.
-    // Our backend route is simple, but we can filter it locally or send as query.
+  getPosts: async (search = "", fileType = "") => {
     const response = await apiClient.get("/posts", {
-      params: { search: searchQuery },
+      params: { search, fileType },
     });
-
-    // Filter locally if backend doesn't support search param
-    let posts = response.data;
-    if (searchQuery) {
-      posts = posts.filter(
-        (p) =>
-          p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.body.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
-    return posts;
-  },
-
-  createPost: async (title, body, author) => {
-    // Since we use the auth token, the backend knows the author, but we can still pass it if schema requires
-    const response = await apiClient.post("/posts", { title, body });
     return response.data;
   },
 
-  deletePost: async (postId) => {
-    const response = await apiClient.delete(`/admin/posts/${postId}`);
+  getActiveUsers: async () => {
+    const response = await apiClient.get("/posts/active-users");
+    return response.data;
+  },
+
+  createPost: async (title, body, fileId) => {
+    const response = await apiClient.post("/posts", { title, body, fileId });
+    return response.data;
+  },
+
+  // --- Files ---
+  uploadFile: async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post("/files/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data; // { file: { id, path, ... } }
+  },
+
+  // --- Profiles & Settings ---
+  getProfile: async (username) => {
+    const response = await apiClient.get(`/profiles/${username}`);
+    return response.data;
+  },
+
+  updateProfile: async (data) => {
+    const response = await apiClient.patch("/profiles/me", data);
+    return response.data;
+  },
+
+  updateSettings: async (data) => {
+    const response = await apiClient.patch("/profiles/settings", data);
+    return response.data;
+  },
+
+  updatePassword: async (data) => {
+    const response = await apiClient.patch("/profiles/password", data);
+    return response.data;
+  },
+
+  deleteAccount: async () => {
+    const response = await apiClient.delete("/profiles/me");
+    return response.data;
+  },
+
+  // --- Bookmarks ---
+  toggleBookmark: async (postId) => {
+    const response = await apiClient.post("/bookmarks/toggle", { postId });
+    return response.data;
+  },
+
+  getBookmarks: async () => {
+    const response = await apiClient.get("/bookmarks/my-bookmarks");
     return response.data;
   },
 
   // --- Admin ---
-  getLogs: async () => {
-    const response = await apiClient.get("/admin/logs");
-    return response.data; // Array of logs
+  getUsers: async () => {
+    const response = await apiClient.get("/admin/users");
+    return response.data;
+  },
+
+  getStats: async () => {
+    const response = await apiClient.get("/admin/stats");
+    return response.data;
+  },
+
+  getLogs: async (category = "") => {
+    const response = await apiClient.get("/admin/logs", {
+      params: { category },
+    });
+    return response.data;
+  },
+
+  suspendUser: async (id, suspended) => {
+    const response = await apiClient.patch(`/admin/users/${id}/suspend`, {
+      suspended,
+    });
+    return response.data;
+  },
+
+  suspendPost: async (id, suspended) => {
+    const response = await apiClient.patch(`/admin/posts/${id}/suspend`, {
+      suspended,
+    });
+    return response.data;
   },
 };

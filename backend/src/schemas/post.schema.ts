@@ -2,12 +2,15 @@ import { z } from 'zod';
 
 export const createPostSchema = z.object({
   body: z.object({
-    title: z
-      .string()
-      .min(3, 'Title must be at least 3 characters long')
-      .max(255, 'Title cannot exceed 255 characters'),
-    body: z
-      .string()
-      .min(10, 'Body must be at least 10 characters long'),
+    title: z.string().max(255).optional(),
+    body: z.string().optional(),
+    fileId: z.union([z.number(), z.string()]).optional(),
+  }).refine((data) => {
+    const filledFields = [data.title, data.body, data.fileId].filter(
+      (f) => f !== undefined && f !== null && f !== ''
+    ).length;
+    return filledFields >= 2;
+  }, {
+    message: "At least two fields (title, description, or file) must be filled.",
   }),
 });

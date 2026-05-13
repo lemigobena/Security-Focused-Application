@@ -12,6 +12,8 @@ import authRoutes from './routes/auth.routes';
 import postRoutes from './routes/post.routes';
 import adminRoutes from './routes/admin.routes';
 import fileRoutes from './routes/file.routes';
+import profileRoutes from './routes/profile.routes';
+import bookmarkRoutes from './routes/bookmark.routes';
 
 dotenv.config();
 
@@ -30,7 +32,7 @@ app.use(
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  max: 500, // Relaxed limit for development/testing
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api', limiter);
@@ -45,6 +47,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/profiles', profileRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
