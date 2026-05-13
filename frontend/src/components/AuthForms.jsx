@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../services/api";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -141,7 +142,7 @@ export const AuthForms = ({ onLoginSuccess, initialMode = "login" }) => {
             onChange={(e) => setAgreedToTerms(e.target.checked)} 
             required
           />
-          <label htmlFor="terms">I agree to the <a href="#terms">Terms of Use</a></label>
+          <label htmlFor="terms">I agree to the <Link to="/terms" target="_blank">Terms of Use</Link></label>
         </div>
 
         <button 

@@ -92,7 +92,7 @@ export const login = async (
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      res.status(401).json({ error: "Invalid credentials" });
+      res.status(401).json({ message: "Incorrect email address" });
       return;
     }
 
@@ -105,17 +105,17 @@ export const login = async (
     }
 
     if (user.isSuspended) {
-      res.status(403).json({ error: "Your account has been suspended" });
+      res.status(403).json({ message: "Your account has been suspended" });
       return;
     }
 
     if (!user.agreedToTerms) {
-      res.status(401).json({ error: "You must agree to the terms of use" });
+      res.status(401).json({ message: "You must agree to the terms of use" });
       return;
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      res.status(403).json({ error: "Account is locked. Try again later." });
+      res.status(403).json({ message: "Account is locked for 15 minutes due to multiple failed attempts." });
       return;
     }
 
@@ -131,7 +131,7 @@ export const login = async (
         data: { failedLoginAttempts: attempts, lockedUntil },
       });
 
-      res.status(401).json({ error: "Invalid credentials" });
+      res.status(401).json({ message: "Incorrect password" });
       return;
     }
 
