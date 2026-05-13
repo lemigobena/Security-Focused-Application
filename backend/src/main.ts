@@ -11,6 +11,7 @@ import { errorHandler } from './middlewares/error.middleware';
 import authRoutes from './routes/auth.routes';
 import postRoutes from './routes/post.routes';
 import adminRoutes from './routes/admin.routes';
+import fileRoutes from './routes/file.routes';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/files', fileRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
