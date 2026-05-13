@@ -62,6 +62,10 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });
 });
 
+app.get('/', (req, res) => {
+  res.status(200).send('Security API is running');
+});
+
 // Centralized error handler
 app.use(errorHandler);
 
