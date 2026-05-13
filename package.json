@@ -11,12 +11,15 @@
     "build": "npm run build:backend && npm run build:frontend",
     "build:frontend": "cd frontend && npm install && npm run build",
     "build:backend": "cd backend && npm install && npx prisma generate",
+    "postinstall": "npx prisma generate --schema=backend/prisma/schema.prisma",
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "@prisma/client": "^7.8.0"
   },
   "devDependencies": {
-    "vercel": "latest"
+    "vercel": "latest",
+    "prisma": "^7.8.0"
   }
 }
