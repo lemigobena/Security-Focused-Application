@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "npx prisma generate --schema=backend/prisma/schema.prisma && cd frontend && npm install && npm run build && cd .. && rm -rf public && mv frontend/dist public",
+    "build": "npx prisma generate --schema=backend/prisma/schema.prisma && cd frontend && npm install && npm run build && cd .. && rm -rf dist && mv frontend/dist dist",
     "postinstall": "npx prisma generate --schema=backend/prisma/schema.prisma"
   },
   "dependencies": {
