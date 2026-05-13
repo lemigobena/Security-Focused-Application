@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://security-focused-application.vercel.app/api/$1"
+      "destination": "https://security-focused-application-8285h1pel-lemis-projects-12e4ddf8.vercel.app/api/$1"
     }
   ]
 }

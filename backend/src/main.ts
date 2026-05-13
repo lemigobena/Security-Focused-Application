@@ -24,7 +24,11 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 app.use(
   cors({
-    origin: true,
+    origin: [
+      'https://security-focused-application-rb3m-lbn230thf.vercel.app',
+      'https://security-focused-application-rb3m.vercel.app',
+      'http://localhost:5173'
+    ],
     credentials: true, // Allow cookies to be sent
   })
 );
