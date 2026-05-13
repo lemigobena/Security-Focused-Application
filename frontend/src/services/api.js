@@ -16,7 +16,7 @@ apiClient.interceptors.response.use(
   (error) => {
     // If we want to automatically clear state on 401, we could dispatch an event here.
     // For now, we'll just reject the promise so the component can handle it.
-    return Promise.reject(error.response?.data?.message || error.message);
+    return Promise.reject(error.response?.data?.error || error.response?.data?.message || error.message);
   },
 );
 
